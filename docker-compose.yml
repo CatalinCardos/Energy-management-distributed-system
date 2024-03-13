@@ -1,0 +1,132 @@
+version: '3.5'
+
+services:
+  db-user:
+    image: mysql:latest
+    restart: always
+    environment:
+      MYSQL_DATABASE: 'user_management'
+      MYSQL_ROOT_PASSWORD: '123456789'
+    container_name: mysql1
+    volumes:
+      - db-volume:/var/lib/mysql1
+    ports:
+      - '3307:3306'
+    expose:
+      - '3306'
+    networks:
+      - DS_NETWORK
+
+  db-device:
+    image: mysql:latest
+    restart: always
+    environment:
+      MYSQL_DATABASE: 'device_management'
+      MYSQL_ROOT_PASSWORD: '123456789'
+    container_name: mysql2
+    volumes:
+      - db-volume:/var/lib/mysql2
+    ports:
+      - '3308:3306'
+    expose:
+      - '3306'
+    networks:
+      - DS_NETWORK
+
+  db-energy:
+    image: mysql:latest
+    restart: always
+    environment:
+      MYSQL_DATABASE: 'energy_management'
+      MYSQL_ROOT_PASSWORD: '123456789'
+    container_name: mysql3
+    volumes:
+      - db-volume:/var/lib/mysql2
+    ports:
+      - '3309:3306'
+    expose:
+      - '3306'
+    networks:
+      - DS_NETWORK
+
+  backend-device:
+    build:
+      context: ./device_management
+      dockerfile: ./Dockerfile
+    container_name: device-backend
+    ports:
+      - '3001:3001'
+    depends_on:
+      - db-device
+    expose: 
+      - '3001'
+    networks:
+      - DS_NETWORK
+
+  backend-user:
+    build:
+      context: ./user_management
+      dockerfile: ./Dockerfile
+    container_name: user-backend
+    ports:
+      - '3002:3002'
+    depends_on:
+      - db-user
+    expose:
+      - '3002'
+    networks:
+      - DS_NETWORK
+
+  backend-energy:
+    build:
+      context: ./energy_management
+      dockerfile: ./Dockerfile
+    container_name: energy-backend
+    ports:
+      - '3003:3003'
+    depends_on:
+      - db-energy
+    expose:
+      - '3003'
+    networks:
+      - DS_NETWORK
+
+  chat-management:
+    build:
+      context: ./chat-management
+      dockerfile: ./Dockerfile
+    container_name: chat-management
+    ports:
+      - '3004:3004'
+    expose:
+      - '3004'
+    networks:
+      - DS_NETWORK
+
+  frontend:
+    build:
+        context: ./frontend
+        dockerfile: ./Dockerfile
+    depends_on:
+        - db-device
+        - db-user
+        - db-energy
+        - chat-management
+        - backend-user
+        - backend-device
+        - backend-energy
+    container_name: frontend
+    ports:
+        - '3000:3000'
+    expose:
+        - '3000'
+    networks:
+        - DS_NETWORK
+
+networks:
+    DS_NETWORK:
+        driver: bridge
+        name: DS_NETWORK
+  
+volumes:
+  db-volume:
